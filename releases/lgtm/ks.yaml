@@ -1,15 +1,16 @@
+
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: kafka
+  name: lgtm
   namespace: flux-system
 spec:
   dependsOn:
-    - name: kafka-operator
+    - name: kafka
   interval: 10m0s
-  path: ./releases/kafka
-  prune: true
+  path: ./releases/lgtm
+  prune: false
   sourceRef:
     kind: GitRepository
     name: flux-system
