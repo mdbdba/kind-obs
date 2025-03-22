@@ -506,7 +506,7 @@ spec:
       dnsPolicy: ClusterFirst
       nodeSelector:
         kubernetes.io/os: linux
-        kubernetes.io/hostname: "kind-control-plane"
+        kubernetes.io/hostname: "obs-v1-control-plane"
       serviceAccountName: ingress-nginx
       terminationGracePeriodSeconds: 0
       tolerations:
@@ -570,7 +570,7 @@ spec:
             type: RuntimeDefault
       nodeSelector:
         kubernetes.io/os: linux
-        kubernetes.io/hostname: "kind-control-plane"
+        kubernetes.io/hostname: "obs-v1-control-plane"
       restartPolicy: OnFailure
       serviceAccountName: ingress-nginx-admission
 ---
@@ -625,7 +625,7 @@ spec:
             type: RuntimeDefault
       nodeSelector:
         kubernetes.io/os: linux
-        kubernetes.io/hostname: "kind-control-plane"
+        kubernetes.io/hostname: "obs-v1-control-plane"
       restartPolicy: OnFailure
       serviceAccountName: ingress-nginx-admission
 ---
