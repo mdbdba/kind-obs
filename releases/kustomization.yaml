@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
 - ./kafka/ks.yaml
 - ./lgtm/ks.yaml
+- ./k8status/ks.yaml
