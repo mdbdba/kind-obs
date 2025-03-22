@@ -6,4 +6,4 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m0s
-  url: https://stenic.github.io/
+  url: https://stenic.github.io/k8status

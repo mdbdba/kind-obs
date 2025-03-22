@@ -1,0 +1,17 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: k8status
+  namespace: flux-system
+spec:
+  targetNamespace: monitoring
+  chart:
+    spec:
+      chart: k8status
+      sourceRef:
+        kind: HelmRepository
+        name: k8status
+      version: 0.16.2
+  interval: 10m0s
+
