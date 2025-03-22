@@ -14,4 +14,7 @@ spec:
         name: k8status
       version: 0.16.2
   interval: 10m0s
+  values:
+    k8status:
+      allNamespaces: true
 
