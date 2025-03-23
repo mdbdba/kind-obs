@@ -1,0 +1,14 @@
+
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: etcd-buf
+  namespace: flux-system
+spec:
+  interval: 10m0s
+  path: ./releases/etcd-buf
+  prune: false
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
