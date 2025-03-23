@@ -11,7 +11,7 @@ spec:
       chart: etcd
       sourceRef:
         kind: HelmRepository
-        name: bitnami
+        name: bitnami-etcd
       version: 11.1.6
   interval: 10m0s
   values:
