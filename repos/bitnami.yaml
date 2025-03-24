@@ -1,9 +1,0 @@
----
-apiVersion: source.toolkit.fluxcd.io/v1beta2
-kind: OCIRepository
-metadata:
-  name: bitnami-etcd
-  namespace: flux-system
-spec:
-  interval: 10m0s
-  url: oci://registry-1.docker.io/bitnamicharts/etcd
