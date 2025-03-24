@@ -5,3 +5,4 @@ resources:
 - ./lgtm/ks.yaml
 - ./k8status/ks.yaml
 - ./bufstream/ks.yaml
+- ./edge-telemetry-collector/ks.yaml

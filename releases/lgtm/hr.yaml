@@ -14,4 +14,5 @@ spec:
         name: grafana
       version: 2.1.0
   interval: 10m0s
+  values:
 
