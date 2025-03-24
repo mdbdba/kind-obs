@@ -17,20 +17,24 @@ data:
         include_file_name: true
         operators:
           - type: json_parser
-          # Extract timestamp - fixed syntax
-          - type: time_parser
-            parse_from: time
-            layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+          
           # Extract Kubernetes metadata
           - type: regex_parser
             regex: '^/var/log/pods/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<pod_uid>[^/]+)/(?P<container_name>[^/]+)/.*$'
             parse_from: attributes["log.file.path"]
             parse_to: attributes
           # Replace add_fields with label operator
-          - type: label
-            labels:
-              source: "grafana"
-              component: "monitoring"
+          # Add source attribute using attribute_mapper
+          - type: move
+            from: body.message
+            to: body.message_original
+          - type: add
+            field: attributes.source
+            value: grafana
+          - type: add
+            field: attributes.component
+            value: monitoring
+
 
 
     processors:
