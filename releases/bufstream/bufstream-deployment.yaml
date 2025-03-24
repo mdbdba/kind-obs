@@ -46,7 +46,7 @@ spec:
               protocol: TCP
           volumeMounts:
             - mountPath: /bufstream.yaml
-              subPath: /bufstream.yaml
+              subPath: bufstream.yaml
               name: bufstream-claim0
       hostname: bufstream
       restartPolicy: Always
