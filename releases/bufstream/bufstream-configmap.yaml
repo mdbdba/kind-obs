@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bufstream-config
+  namespace: queuing
+data:
+  bufstream.yaml: |
+    kafka:
+      address:
+        host: 0.0.0.0
+        port: 9092

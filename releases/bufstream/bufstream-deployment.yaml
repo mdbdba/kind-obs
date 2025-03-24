@@ -47,10 +47,10 @@ spec:
           volumeMounts:
             - mountPath: /bufstream.yaml
               subPath: bufstream.yaml
-              name: bufstream-claim0
+              name: config-volume
       hostname: bufstream
       restartPolicy: Always
       volumes:
-        - name: bufstream-claim0
-          persistentVolumeClaim:
-            claimName: bufstream-claim0
+        - name: config-volume
+          configMap:
+            name: bufstream-config
