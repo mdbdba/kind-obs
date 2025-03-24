@@ -6,8 +6,8 @@ metadata:
   name: lgtm
   namespace: flux-system
 spec:
-  dependsOn:
-    - name: kafka
+#  dependsOn:
+#    - name: kafka
   interval: 10m0s
   path: ./releases/lgtm
   prune: false
