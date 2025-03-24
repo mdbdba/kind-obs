@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.service: bufstream
+  name: bufstream
+  namespace: queuing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.service: bufstream
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        io.service: bufstream
+    spec:
+      containers:
+        - args:
+            - serve
+            - --config
+            - /bufstream.yaml
+            - --config.kafka.address.host
+            - 0.0.0.0
+            - --config.kafka.public_address.host
+            - bufstream
+          image: bufbuild/bufstream:0.3.14
+          livenessProbe:
+            exec:
+              command:
+                - /usr/local/bin/bufstream
+                - admin
+                - status
+                - --exit-code
+                - --url
+                - http://127.0.0.1:9089
+            failureThreshold: 10
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 10
+          name: bufstream
+          ports:
+            - containerPort: 9092
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /bufstream.yaml
+              name: bufstream-claim0
+      hostname: bufstream
+      restartPolicy: Always
+      volumes:
+        - name: bufstream-claim0
+          persistentVolumeClaim:
+            claimName: bufstream-claim0

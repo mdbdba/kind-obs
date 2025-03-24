@@ -4,3 +4,4 @@ resources:
 - ./kafka/ks.yaml
 - ./lgtm/ks.yaml
 - ./k8status/ks.yaml
+- ./bufstream/ks.yaml
