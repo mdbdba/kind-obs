@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.service: akhq
+  name: akhq
+  namespace: queuing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.service: akhq
+  template:
+    metadata:
+      labels:
+        io.service: akhq
+    spec:
+      containers:
+        - env:
+            - name: AKHQ_CONFIGURATION
+              value: |
+                akhq:
+                  connections:
+                    kafka:
+                      properties:
+                        bootstrap.servers: "kafka:9092"
+                        client.id: "akhq;broker_count=1;host_override=kafka"
+
+          image: tchiotludo/akhq:0.25.0
+          livenessProbe:
+            exec:
+              command:
+                - nc -z akhq 8080 || exit -1
+            failureThreshold: 10
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 10
+          name: akhq
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+      restartPolicy: Always
