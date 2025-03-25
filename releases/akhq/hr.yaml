@@ -19,8 +19,8 @@ spec:
     - name: AKHQ_CONFIGURATION
       value: |
           akhq:
-            secrets:
-              docker-kafka-server:
+            connections:
+              kafka:
                 properties:
-                  bootstrap.servers: "kafka-kafka-brokers:9092"
+                  bootstrap.servers: "kafka-kafka-brokers.queuing.svc:9092"
 
