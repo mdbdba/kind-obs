@@ -23,7 +23,7 @@ spec:
                   connections:
                     kafka:
                       properties:
-                        bootstrap.servers: "kafka:9092"
+                        bootstrap.servers: "kafka-kafka-brokers.queuing.svc.cluster.local:9092"
                         client.id: "akhq;broker_count=1;host_override=kafka"
 
           image: tchiotludo/akhq:0.25.0
