@@ -17,7 +17,7 @@ spec:
   values:
     grafana:
       grafana.ini:
-      log:
-        format: json
-        level: debug
+        log:
+          format: json
+          level: debug
 
