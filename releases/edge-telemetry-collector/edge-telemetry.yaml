@@ -33,16 +33,6 @@ data:
           from: attributes.content
           to: body
         
-        # Add standard attributes
-        - type: add
-          field: attributes.source
-          value: kubernetes
-        - type: add
-          field: attributes.component
-          value: ${attributes.container_name}
-        - type: add
-          field: attributes.stream
-          value: ${attributes.stream}
 
     processors:
       batch:
