@@ -59,14 +59,12 @@ data:
     exporters:
       # debug:
       #   verbosity: detailed
-      otlp:
+      kafka:
         # Send to the bufstream service in queuing namespace
-        endpoint: kafka-kafka-brokers.queuing.svc:9092
-        tls:
-          insecure: true
-        headers:
-          # Adding topic in headers for bufstream
-          "X-Topic": "grafana-logs"
+        brokers: [kafka-kafka-brokers.queuing.svc:9092]
+        topic: grafana-logs
+        encoding: otlp_proto
+        protocol_version: 2.0.0
     
     
     service:
@@ -74,7 +72,7 @@ data:
         logs:
           receivers: [filelog]
           processors: [batch, resource]
-          exporters: [otlp]
+          exporters: [kafka]
 
 ---
 apiVersion: apps/v1
