@@ -17,6 +17,7 @@ data:
         include_file_name: true
         operators:
           - type: json_parser
+            on_error: preserve
           
           # Extract Kubernetes metadata
           - type: regex_parser
@@ -25,18 +26,18 @@ data:
             parse_to: attributes
           # Replace add_fields with label operator
           # Add source attribute using attribute_mapper
-          - type: move
-            from: body.msg
-            to: body.message_original
-          - type: add
-            field: attributes.source
-            value: grafana
-          - type: add
-            field: attributes.component
-            value: monitoring
-          - type: add
-            field: attributes.topic
-            value: grafana-logs
+          # - type: move
+            #   from: body.msg
+            # to: body.message_original
+            # - type: add
+            # field: attributes.source
+            # value: grafana
+            # - type: add
+            # field: attributes.component
+            # value: monitoring
+            # - type: add
+            # field: attributes.topic
+            # value: grafana-logs
 
 
 
@@ -65,14 +66,18 @@ data:
     
     
     exporters:
-      otlp:
+      file:
+        path: /tmp/debug-logs.json
+        format: json
+        
+        # otlp:
         # Send to the bufstream service in queuing namespace
-        endpoint: kafka-kafka-brokers.queuing.svc:9092
-        tls:
-          insecure: true
-        headers:
+        # endpoint: kafka-kafka-brokers.queuing.svc:9092
+          # tls:
+        # insecure: true
+          # headers:
           # Adding topic in headers for bufstream
-          "X-Topic": "grafana-logs"
+        # "X-Topic": "grafana-logs"
     
     
     service:
@@ -80,7 +85,9 @@ data:
         logs:
           receivers: [filelog]
           processors: [batch, resource]
-          exporters: [otlp]
+          exporters: [file]
+          # exporters: [otlp]
+
 ---
 apiVersion: apps/v1
 kind: DaemonSet
