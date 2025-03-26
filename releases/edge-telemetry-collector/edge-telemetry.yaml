@@ -26,8 +26,9 @@ data:
           # Replace add_fields with label operator
           # Add source attribute using attribute_mapper
           - type: move
-            from: body.message
+            from: body.msg
             to: body.message_original
+            if: 'exists(body.msg)'
           - type: add
             field: attributes.source
             value: grafana
