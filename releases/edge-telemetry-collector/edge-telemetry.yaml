@@ -17,7 +17,6 @@ data:
         include_file_name: true
         operators:
           - type: json_parser
-            on_error: preserve
           
           # Extract Kubernetes metadata
           - type: regex_parser
