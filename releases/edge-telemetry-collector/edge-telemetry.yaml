@@ -67,7 +67,7 @@ data:
     exporters:
       otlp:
         # Send to the bufstream service in queuing namespace
-        endpoint: kafka.queuing.svc.cluster.local:9092
+        endpoint: kafka-kafka-brokers.queuing.svc:9092
         tls:
           insecure: true
         headers:
