@@ -19,6 +19,8 @@ spec:
     - name: AKHQ_CONFIGURATION
       value: |
           akhq:
+            security:
+              enabled: false
             connections:
               kafka:
                 properties:
