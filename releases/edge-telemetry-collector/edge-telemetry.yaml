@@ -28,7 +28,6 @@ data:
           - type: move
             from: body.msg
             to: body.message_original
-            if: 'body.msg != nil'
           - type: add
             field: attributes.source
             value: grafana
