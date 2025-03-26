@@ -9,7 +9,7 @@ data:
       filelog:
         include:
           # Target the Grafana pods in the monitoring namespace
-          - /var/log/pods/*/*/*/*.log
+          - /var/log/pods/**/*.log
         exclude:
           - '*.gz'
         start_at: beginning
