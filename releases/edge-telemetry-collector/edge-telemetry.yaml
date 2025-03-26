@@ -38,10 +38,6 @@ data:
             # - type: add
             # field: attributes.topic
             # value: grafana-logs
-
-
-
-
     processors:
       batch:
         timeout: 1s
@@ -64,20 +60,17 @@ data:
             value: grafana-logs
             action: upsert
     
-    
     exporters:
-      file:
-        path: /tmp/debug-logs.json
-        format: json
-        
-        # otlp:
+      debug:
+        verbosity: detailed
+      otlp:
         # Send to the bufstream service in queuing namespace
-        # endpoint: kafka-kafka-brokers.queuing.svc:9092
-          # tls:
-        # insecure: true
-          # headers:
+        endpoint: kafka-kafka-brokers.queuing.svc:9092
+        tls:
+          insecure: true
+        headers:
           # Adding topic in headers for bufstream
-        # "X-Topic": "grafana-logs"
+          "X-Topic": "grafana-logs"
     
     
     service:
@@ -85,8 +78,7 @@ data:
         logs:
           receivers: [filelog]
           processors: [batch, resource]
-          exporters: [file]
-          # exporters: [otlp]
+          exporters: [debug, otlp]
 
 ---
 apiVersion: apps/v1
