@@ -15,4 +15,9 @@ spec:
       version: 2.1.0
   interval: 10m0s
   values:
+    grafana:
+      grafana.ini:
+      log:
+        format: json
+        level: debug
 
