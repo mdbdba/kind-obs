@@ -32,8 +32,10 @@ data:
         - type: move
           from: attributes.content
           to: body
-        
-
+          on_error: ignore
+    
+    
+    
     processors:
       batch:
         timeout: 1s
