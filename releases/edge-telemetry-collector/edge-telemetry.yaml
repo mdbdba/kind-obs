@@ -11,7 +11,7 @@ data:
           # Target the Grafana pods in the monitoring namespace
           - /var/log/pods/**/*.log
         exclude:
-        - /var/log/pods/queuing_kafka-zookeeper-*/*.log
+        - /var/log/pods/queuing_kafka-zookeeper-*/*/*.log
         - '*.gz'
         start_at: beginning
         include_file_path: true
@@ -33,7 +33,7 @@ data:
       # Zookeeper logs - with simpler processing
       filelog/zookeeper:
         include:
-          - /var/log/pods/queuing_kafka-zookeeper-*/*.log
+          - /var/log/pods/queuing_kafka-zookeeper-*/*/*.log
         exclude:
           - '*.gz'
         start_at: beginning
