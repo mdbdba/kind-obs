@@ -1,0 +1,97 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: inner-aggregator-collector-config
+  namespace: telemetry
+data:
+  collector-config.yaml: |
+    receivers:
+      kafka:
+        brokers: ["kafka-kafka-brokers.queuing.svc:9092"]
+        topic: grafana-logs
+        group_id: otel-collector-loki
+        initial_offset: oldest
+        encoding: otlp_proto
+        protocol_version: 2.0.0
+
+    processors:
+      batch:
+        timeout: 1s
+        send_batch_size: 1024
+      
+      # You might want to add attributes or transform logs here
+      # For example, you can add a source label for Loki
+      resource:
+        attributes:
+          - key: source
+            value: "kubernetes"
+            action: upsert
+
+    exporters:
+      loki:
+        endpoint: "http://loki-gateway.monitoring.svc:80/loki/api/v1/push"
+        # If Loki requires authentication, uncomment and configure:
+        # headers:
+        #   "X-Scope-OrgID": "tenant-id"
+        
+        # Configure how to organize logs in Loki
+        labels:
+          # Map OpenTelemetry attributes to Loki labels
+          # These will be used for querying in Loki
+          app: "attributes.app"
+          namespace: "resource.attributes.k8s.namespace.name"
+          pod: "resource.attributes.k8s.pod.name"
+          container: "resource.attributes.k8s.container.name"
+          level: "attributes.level"
+          # Add more labels as needed
+        
+        # How long to wait between retries
+        timeout: 10s
+        
+        # Uncomment if you need TLS configuration
+        # tls:
+        #   insecure: false
+        #   ca_file: /path/to/ca.crt
+    
+    service:
+      pipelines:
+        logs:
+          receivers: [kafka]
+          processors: [batch, resource]
+          exporters: [loki]
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inner-aggregator-collector
+  namespace: telemetry
+spec:
+  replicas: 1  # Adjust based on your needs
+  selector:
+    matchLabels:
+      app: inner-aggregator-collector
+  template:
+    metadata:
+      labels:
+        app: inner-aggregator-collector
+    spec:
+      containers:
+        - name: collector
+          image: otel/opentelemetry-collector-contrib:latest
+          args:
+            - --config=/conf/collector-config.yaml
+          volumeMounts:
+            - name: config-volume
+              mountPath: /conf
+          resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
+            limits:
+              cpu: 500m
+              memory: 500Mi
+      volumes:
+        - name: config-volume
+          configMap:
+            name: inner-aggregator-collector-config
