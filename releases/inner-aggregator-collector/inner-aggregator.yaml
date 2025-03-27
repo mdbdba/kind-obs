@@ -8,7 +8,7 @@ data:
     receivers:
       kafka:
         brokers: ["kafka-kafka-brokers.queuing.svc:9092"]
-        topic: grafana-logs
+        topic: grafana-logs*
         group_id: otel-collector-loki
         initial_offset: oldest
         encoding: otlp_proto
@@ -19,40 +19,26 @@ data:
         timeout: 1s
         send_batch_size: 1024
       
+  
       # You might want to add attributes or transform logs here
       # For example, you can add a source label for Loki
-      resource:
-        attributes:
-          - key: source
-            value: "kubernetes"
-            action: upsert
+      # Add message attributes that show which topic it came from
+      attributes:
+        actions:
+          - key: kafka.topic
+            from_context: kafka.topic
+            action: insert
+
 
     exporters:
-      loki:
-        endpoint: "http://loki-gateway.monitoring.svc:80/loki/api/v1/push"
-        # If Loki requires authentication, uncomment and configure:
-        # headers:
-        #   "X-Scope-OrgID": "tenant-id"
-        
-        # Configure how to organize logs in Loki
-        labels:
-          # Map OpenTelemetry attributes to Loki labels
-          # These will be used for querying in Loki
-          app: "attributes.app"
-          namespace: "resource.attributes.k8s.namespace.name"
-          pod: "resource.attributes.k8s.pod.name"
-          container: "resource.attributes.k8s.container.name"
-          level: "attributes.level"
-          # Add more labels as needed
-        
-        # How long to wait between retries
-        timeout: 10s
-        
-        # Uncomment if you need TLS configuration
-        # tls:
-        #   insecure: false
-        #   ca_file: /path/to/ca.crt
-    
+      file:
+        path: /var/log/otel-collector/kafka-wildcard-test.json
+        rotation:
+          max_megabytes: 100
+          max_days: 1
+          max_backups: 5
+        format: json
+
     service:
       pipelines:
         logs:
