@@ -44,7 +44,7 @@ data:
         logs:
           receivers: [kafka]
           processors: [batch, resource]
-          exporters: [loki]
+          exporters: [file]
 
 ---
 apiVersion: apps/v1
