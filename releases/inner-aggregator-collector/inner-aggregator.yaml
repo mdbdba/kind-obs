@@ -31,20 +31,18 @@ data:
 
 
     exporters:
-      file:
-        path: /var/log/otel-collector/kafka-wildcard-test.json
-        rotation:
-          max_megabytes: 100
-          max_days: 1
-          max_backups: 5
-        format: json
+      logging:
+        verbosity: detailed
+        sampling_initial: 1
+        sampling_thereafter: 1
+
 
     service:
       pipelines:
         logs:
           receivers: [kafka]
           processors: [batch, attributes]
-          exporters: [file]
+          exporters: [logging]
 
 ---
 apiVersion: apps/v1
