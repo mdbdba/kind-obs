@@ -43,7 +43,7 @@ data:
       pipelines:
         logs:
           receivers: [kafka]
-          processors: [batch, resource]
+          processors: [batch, attributes]
           exporters: [file]
 
 ---
