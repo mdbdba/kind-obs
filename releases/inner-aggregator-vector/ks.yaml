@@ -3,11 +3,11 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: edge-telemetry-vector
+  name: inner-aggregator-vector
   namespace: flux-system
 spec:
   interval: 10m0s
-  path: ./releases/edge-telemetry-vector
+  path: ./releases/inner-aggregator-vector
   prune: false
   sourceRef:
     kind: GitRepository
