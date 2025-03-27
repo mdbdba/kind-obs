@@ -10,7 +10,7 @@ data:
         brokers: ["kafka-kafka-brokers.queuing.svc:9092"]
         topic: grafana-logs*
         group_id: otel-collector-loki
-        initial_offset: oldest
+        initial_offset: earliest
         encoding: otlp_proto
         protocol_version: 2.0.0
 
