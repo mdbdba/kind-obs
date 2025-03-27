@@ -6,5 +6,7 @@ resources:
 - ./k8status/ks.yaml
 #- ./bufstream/ks.yaml
 - ./akhq/ks.yaml
-- ./edge-telemetry-collector/ks.yaml
-- ./inner-aggregator-collector/ks.yaml
+# - ./edge-telemetry-collector/ks.yaml
+# - ./inner-aggregator-collector/ks.yaml
+- ./edge-telemetry-vector/ks.yaml
+- ./inner-aggregator-vector/ks.yaml

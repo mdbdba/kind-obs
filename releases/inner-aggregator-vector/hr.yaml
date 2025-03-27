@@ -1,0 +1,109 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: inner-aggregator-vector
+  namespace: flux-system
+spec:
+  targetNamespace: telemetry
+  chart:
+    spec:
+      chart: vector
+      sourceRef:
+        kind: HelmRepository
+        name: vector
+      version: 0.41.0
+  interval: 10m0s
+  values:
+    vector:
+      role: "Aggregator"
+      customConfig:
+        sources:
+          kafka_input:
+            type: "kafka"
+            bootstrap_servers: "kafka-kafka-brokers.queuing.svc:9092"
+            topics: [ "telemetry-data" ] # Or use wildcard "grafana.*" if needed
+            group_id: "vector-aggregator"
+            auto_offset_reset: "earliest"
+            decoding:
+              codec: "json"
+
+        transforms:
+          # Process and tag incoming data
+          process_telemetry:
+            type: "remap"
+            inputs: [ "kafka_input" ]
+            source: |
+              .aggregator_timestamp = now()
+
+              # Ensure we have a type field to route on
+              if !exists(.type) {
+                # Attempt to detect the type based on fields
+                if exists(.level) || exists(.message) || exists(.severity) {
+                  .type = "log"
+                } else if exists(.value) || exists(.gauge) || exists(.counter) {
+                  .type = "metric"
+                } else {
+                  .type = "unknown"
+                }
+              }
+
+          # Route logs and metrics to different outputs
+          route_by_type:
+            type: "route"
+            inputs: [ "process_telemetry" ]
+            route:
+              logs: '.type == "log" || .type == "unknown"'  # Send unknown to logs by default
+              metrics: '.type == "metric"'
+
+        sinks:
+          # Loki for logs
+          loki_output:
+            type: "loki"
+            inputs: [ "route_by_type.logs" ]
+            endpoint: "http://loki-gateway.monitoring.svc:80"
+            encoding:
+              codec: "json"
+            labels:
+              app: '{{component}}'
+              namespace: '{{kubernetes.namespace}}'
+              node: '{{edge_node}}'
+              level: '{{level}}'
+            out_of_order_action: "accept"  # Handle logs arriving out of order
+            remove_label_fields: true
+            # Basic auth if needed
+            # auth:
+            #   strategy: "basic"
+            #   user: "${LOKI_USERNAME}"
+            #   password: "${LOKI_PASSWORD}"
+
+          # Mimir/Prometheus for metrics
+          mimir_output:
+            type: "prometheus_remote_write"
+            inputs: [ "route_by_type.metrics" ]
+            endpoint: "http://mimir-nginx.monitoring.svc:80/api/v1/push"
+            # Authentication if needed
+            # auth:
+            #   strategy: "basic"
+            #   user: "${MIMIR_USERNAME}"
+            #   password: "${MIMIR_PASSWORD}"
+
+          # Debug sink - useful during setup and testing
+          console:
+            type: "console"
+            inputs: [ "process_telemetry" ]
+            encoding:
+              codec: "json"
+      
+
+      service:
+        enabled: true
+        type: ClusterIP
+
+      resources:
+        requests:
+          memory: "512Mi"
+          cpu: "200m"
+        limits:
+          memory: "1Gi"
+          cpu: "1000m"

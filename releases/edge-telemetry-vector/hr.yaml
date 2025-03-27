@@ -1,0 +1,66 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: edge-telemetry-vector
+  namespace: flux-system
+spec:
+  targetNamespace: telemetry
+  chart:
+    spec:
+      chart: vector
+      sourceRef:
+        kind: HelmRepository
+        name: vector
+      version: 0.41.0
+  interval: 10m0s
+  values:
+    vector:
+      role: "Agent"  # Since this is an edge collector
+      customConfig:
+        sources:
+          # Your original data sources here, for example:
+          logs_source:
+            type: "file"
+            include:
+              - "/var/log/**/*.log"
+            ignore_older: 86400  # 1 day in seconds
+
+          metrics_source:
+            type: "prometheus_scrape"
+            endpoints:
+              - http://localhost:9100/metrics  # For node metrics
+              - http://localhost:8080/metrics  # Application metrics
+
+        transforms:
+          # Optional: Add transforms for parsing, filtering, or enriching data
+          add_edge_metadata:
+            type: "remap"
+            inputs: ["logs_source", "metrics_source"]
+            source: |
+              .edge_node = get_env_var("NODE_NAME") ?? "unknown"
+              .processed_timestamp = now()
+              # Add any additional metadata or processing
+
+        sinks:
+          kafka_output:
+            type: "kafka"
+            inputs: ["add_edge_metadata"]
+            bootstrap_servers: "kafka-kafka-brokers.queuing.svc:9092"
+            topic: "telemetry-data"  # A common topic for all telemetry
+            compression: "gzip"
+            encoding:
+              codec: "json"
+            key_field: "edge_node"  # Optional: use node name as partition key
+
+      service:
+        enabled: true
+        type: ClusterIP
+
+      resources:
+        requests:
+          memory: "256Mi"
+          cpu: "100m"
+        limits:
+          memory: "512Mi"
+          cpu: "500m"
