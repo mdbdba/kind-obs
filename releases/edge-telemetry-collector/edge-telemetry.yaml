@@ -6,36 +6,46 @@ metadata:
 data:
   collector-config.yaml: |
     receivers:
-      filelog:
+      filelog/standard:
         include:
           # Target the Grafana pods in the monitoring namespace
           - /var/log/pods/**/*.log
+        exclude:
+        - /var/log/pods/queuing_kafka-zookeeper-*/*.log
+        - '*.gz'
+        start_at: beginning
+        include_file_path: true
+        include_file_name: true
+        operators:
+        # Standard processing...
+        - type: regex_parser
+          regex: '^/var/log/pods/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<pod_uid>[^/]+)/(?P<container_name>[^/]+)/.*$'
+          parse_from: attributes["log.file.path"]
+          parse_to: attributes
+        - type: regex_parser
+          regex: '^(?P<timestamp>[^\s]+)\s+(?P<stream>stdout|stderr)\s+(?P<flag>\w)\s+(?P<content>.*)$'
+          parse_from: body
+          parse_to: attributes
+        - type: move
+          from: attributes.content
+          to: body
+
+      # Zookeeper logs - with simpler processing
+      filelog/zookeeper:
+        include:
+          - /var/log/pods/queuing_kafka-zookeeper-*/*.log
         exclude:
           - '*.gz'
         start_at: beginning
         include_file_path: true
         include_file_name: true
         operators:
-        # Extract Kubernetes metadata from the path
-        - type: regex_parser
-          regex: '^/var/log/pods/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<pod_uid>[^/]+)/(?P<container_name>[^/]+)/.*$'
-          parse_from: attributes["log.file.path"]
-          parse_to: attributes
-        
-        # Parse the Kubernetes log format in the Body field
-        - type: regex_parser
-          regex: '^(?P<timestamp>[^\s]+)\s+(?P<stream>stdout|stderr)\s+(?P<flag>\w)\s+(?P<content>.*)$'
-          parse_from: body
-          parse_to: attributes
-        
-        # Move the content to a message field 
-        - type: move
-          from: attributes.content
-          to: body
-          on_error: ignore
-    
-    
-    
+          # Only extract path metadata but don't try to parse the body
+          - type: regex_parser
+            regex: '^/var/log/pods/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<pod_uid>[^/]+)/(?P<container_name>[^/]+)/.*$'
+            parse_from: attributes["log.file.path"]
+            parse_to: attributes
+
     processors:
       batch:
         timeout: 1s
@@ -72,7 +82,7 @@ data:
     service:
       pipelines:
         logs:
-          receivers: [filelog]
+          receivers: [filelog/standard, filelog/zookeeper]
           processors: [batch, resource]
           exporters: [kafka]
 
