@@ -6,6 +6,8 @@ metadata:
   name: inner-aggregator-vector
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: kafka
   interval: 10m0s
   path: ./releases/inner-aggregator-vector
   prune: false

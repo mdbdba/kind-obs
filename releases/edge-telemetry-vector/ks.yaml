@@ -6,6 +6,8 @@ metadata:
   name: edge-telemetry-vector
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: kafka
   interval: 10m0s
   path: ./releases/edge-telemetry-vector
   prune: false
