@@ -8,7 +8,7 @@ data:
     receivers:
       kafka:
         brokers: ["kafka-kafka-brokers.queuing.svc:9092"]
-        topic: grafana-logs*
+        topic: grafana-logs
         group_id: otel-collector-loki
         initial_offset: earliest
         encoding: otlp_proto
