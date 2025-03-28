@@ -17,45 +17,62 @@ spec:
   values:
     vector:
       role: "Agent"  # Since this is an edge collector
+      logLevel: "debug"
       customConfig:
         sources:
           # Your original data sources here, for example:
           logs_source:
             type: "file"
             include:
-              - "/var/log/**/*.log"
-            ignore_older: 86400  # 1 day in seconds
+              - "/var/log/**/*.log" # standard system logs
+              - "/var/lib/docker/containers/**/*.log" # container logs
+              - "/var/log/pods/**/*.log" # k8s logs
 
-          metrics_source:
-            type: "prometheus_scrape"
-            endpoints:
-              - http://localhost:9100/metrics  # For node metrics
-              - http://localhost:8080/metrics  # Application metrics
+            ignore_older: 86400  # 1 day in seconds
+            max_read_bytes: 10485760  # 10MB
+            multiline:
+              mode: "newline_delimiter"  # Handles multi-line log entries
 
         transforms:
-          # Optional: Add transforms for parsing, filtering, or enriching data
-          add_edge_metadata:
+          prepare_logs:
             type: "remap"
-            inputs: ["logs_source", "metrics_source"]
+            inputs: ["log_files"]
             source: |
-              .edge_node = get_env_var("NODE_NAME") ?? "unknown"
-              .processed_timestamp = now()
-              # Add any additional metadata or processing
+              # Add metadata
+              .host = get_env_var("HOSTNAME") ?? "unknown"
+              .timestamp = now()
+              .type = "log"
+              
+              # Parse file path to get context
+              if exists(.file) {
+                .log_file = .file
+                del(.file)
+              }
 
+        # 3. Sink: Send to Kafka
         sinks:
+          # Primary sink: Kafka
           kafka_output:
             type: "kafka"
-            inputs: ["add_edge_metadata"]
+            inputs: ["prepare_logs"]
             bootstrap_servers: "kafka-kafka-brokers.queuing.svc:9092"
-            topic: "telemetry-data"  # A common topic for all telemetry
-            compression: "gzip"
+            topic: "telemetry-logs"
+            key_field: "host"  # Use host as partition key
+            compression: "snappy"
             encoding:
               codec: "json"
-            key_field: "edge_node"  # Optional: use node name as partition key
+            batch:
+              max_bytes: 1048576  # 1MB
+              timeout_secs: 1
+            healthcheck:
+              enabled: true
 
-      service:
-        enabled: true
-        type: ClusterIP
+          # Debug sink: Console output to see data flow
+          console:
+            type: "console"
+            inputs: ["prepare_logs"]
+            encoding:
+              codec: "json"
 
       resources:
         requests:
