@@ -16,7 +16,7 @@ spec:
   interval: 10m0s
   values:
     vector:
-      fullnameOverride: edge-telemetry
+      fullnameOverride: "edge-telemetry"
       role: "Agent"  # Since this is an edge collector
       logLevel: "debug"
       extraVolumes:
