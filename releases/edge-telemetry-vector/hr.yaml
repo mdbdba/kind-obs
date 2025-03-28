@@ -15,91 +15,90 @@ spec:
       version: 0.41.0
   interval: 10m0s
   values:
-    vector:
-      fullnameOverride: "edge-telemetry"
-      role: "Agent"  # Since this is an edge collector
-      logLevel: "debug"
-      extraVolumes:
-        - name: var-log
-          hostPath:
-            path: /var/log
-        - name: var-lib-docker-containers
-          hostPath:
-            path: /var/lib/docker/containers
-        - name: pod-logs
-          hostPath:
-            path: /var/log/pods
+    fullnameOverride: "edge-telemetry"
+    role: "Agent"  # Since this is an edge collector
+    logLevel: "debug"
+    extraVolumes:
+      - name: var-log
+        hostPath:
+          path: /var/log
+      - name: var-lib-docker-containers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: pod-logs
+        hostPath:
+          path: /var/log/pods
 
-      extraVolumeMounts:
-        - name: var-log
-          mountPath: /var/log
-        - name: var-lib-docker-containers
-          mountPath: /var/lib/docker/containers
-          readOnly: true
-        - name: pod-logs
-          mountPath: /var/log/pods
-          readOnly: true
+    extraVolumeMounts:
+      - name: var-log
+        mountPath: /var/log
+      - name: var-lib-docker-containers
+        mountPath: /var/lib/docker/containers
+        readOnly: true
+      - name: pod-logs
+        mountPath: /var/log/pods
+        readOnly: true
 
-      customConfig:
-        sources:
-          # Your original data sources here, for example:
-          logs_source:
-            type: "file"
-            include:
-              - "/var/log/**/*.log" # standard system logs
-              - "/var/lib/docker/containers/**/*.log" # container logs
-              - "/var/log/pods/**/*.log" # k8s logs
+    customConfig:
+      sources:
+        # Your original data sources here, for example:
+        logs_source:
+          type: "file"
+          include:
+            - "/var/log/**/*.log" # standard system logs
+            - "/var/lib/docker/containers/**/*.log" # container logs
+            - "/var/log/pods/**/*.log" # k8s logs
 
-            ignore_older: 86400  # 1 day in seconds
-            max_read_bytes: 10485760  # 10MB
-            multiline:
-              mode: "newline_delimiter"  # Handles multi-line log entries
+          ignore_older: 86400  # 1 day in seconds
+          max_read_bytes: 10485760  # 10MB
+          multiline:
+            mode: "newline_delimiter"  # Handles multi-line log entries
 
-        transforms:
-          prepare_logs:
-            type: "remap"
-            inputs: ["log_files"]
-            source: |
-              # Add metadata
-              .host = get_env_var("HOSTNAME") ?? "unknown"
-              .timestamp = now()
-              .type = "log"
-              
-              # Parse file path to get context
-              if exists(.file) {
-                .log_file = .file
-                del(.file)
-              }
+      transforms:
+        prepare_logs:
+          type: "remap"
+          inputs: ["log_files"]
+          source: |
+            # Add metadata
+            .host = get_env_var("HOSTNAME") ?? "unknown"
+            .timestamp = now()
+            .type = "log"
+            
+            # Parse file path to get context
+            if exists(.file) {
+              .log_file = .file
+              del(.file)
+            }
 
-        # 3. Sink: Send to Kafka
-        sinks:
-          # Primary sink: Kafka
-          kafka_output:
-            type: "kafka"
-            inputs: ["prepare_logs"]
-            bootstrap_servers: "kafka-kafka-brokers.queuing.svc:9092"
-            topic: "telemetry-logs"
-            key_field: "host"  # Use host as partition key
-            compression: "snappy"
-            encoding:
-              codec: "json"
-            batch:
-              max_bytes: 1048576  # 1MB
-              timeout_secs: 1
-            healthcheck:
-              enabled: true
+      # 3. Sink: Send to Kafka
+      sinks:
+        # Primary sink: Kafka
+        kafka_output:
+          type: "kafka"
+          inputs: ["prepare_logs"]
+          bootstrap_servers: "kafka-kafka-brokers.queuing.svc:9092"
+          topic: "telemetry-logs"
+          key_field: "host"  # Use host as partition key
+          compression: "snappy"
+          encoding:
+            codec: "json"
+          batch:
+            max_bytes: 1048576  # 1MB
+            timeout_secs: 1
+          healthcheck:
+            enabled: true
 
-          # Debug sink: Console output to see data flow
-          console:
-            type: "console"
-            inputs: ["prepare_logs"]
-            encoding:
-              codec: "json"
+        # Debug sink: Console output to see data flow
+        console:
+          type: "console"
+          inputs: ["prepare_logs"]
+          encoding:
+            codec: "json"
 
-      resources:
-        requests:
-          memory: "256Mi"
-          cpu: "100m"
-        limits:
-          memory: "512Mi"
-          cpu: "500m"
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
