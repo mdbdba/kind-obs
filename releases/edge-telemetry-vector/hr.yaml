@@ -26,23 +26,23 @@ spec:
     role: "Agent"  # Since this is an edge collector
     logLevel: "debug"
     extraVolumes:
-      - name: var-log
+      - name: custom-var-log
         hostPath:
           path: /var/log
-      - name: var-lib-docker-containers
+      - name: custom-docker-containers
         hostPath:
           path: /var/lib/docker/containers
-      - name: pod-logs
+      - name: custom-pod-logs
         hostPath:
           path: /var/log/pods
 
     extraVolumeMounts:
-      - name: var-log
+      - name: custom-var-log
         mountPath: /var/log
-      - name: var-lib-docker-containers
+      - name: custom-docker-containers
         mountPath: /var/lib/docker/containers
         readOnly: true
-      - name: pod-logs
+      - name: custom-pod-logs
         mountPath: /var/log/pods
         readOnly: true
 
