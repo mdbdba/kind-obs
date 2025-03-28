@@ -16,6 +16,13 @@ spec:
   interval: 10m0s
   values:
     fullnameOverride: "edge-telemetry"
+    service:
+      type: ClusterIP
+      ports:
+        - name: metrics
+          port: 9598
+          protocol: TCP
+
     role: "Agent"  # Since this is an edge collector
     logLevel: "debug"
     extraVolumes:
@@ -57,7 +64,7 @@ spec:
       transforms:
         prepare_logs:
           type: "remap"
-          inputs: ["log_files"]
+          inputs: ["logs_source"]
           source: |
             # Add metadata
             .host = get_env_var("HOSTNAME") ?? "unknown"
