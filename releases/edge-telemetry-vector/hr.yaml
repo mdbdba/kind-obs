@@ -24,7 +24,7 @@ spec:
           protocol: TCP
 
     role: "Agent"  # Since this is an edge collector
-    logLevel: "debug"
+    logLevel: "info"
     extraVolumes:
       - name: custom-var-log
         hostPath:
@@ -61,6 +61,9 @@ spec:
             - "/var/log/**/*.log" # standard system logs
             - "/var/lib/docker/containers/**/*.log" # container logs
             - "/var/log/pods/**/*.log" # k8s logs
+          exclude:
+            - "/var/log/containers/edge-telemetry-*_telemetry_vector-*.log"
+            - "/var/log/pods/telemetry_edge-telemetry-*_*/vector/*.log"
 
           ignore_older: 86400  # 1 day in seconds
           max_read_bytes: 10485760  # 10MB
@@ -112,6 +115,7 @@ spec:
           encoding:
             codec: "json"
 
+    replicas: 1
     resources:
       requests:
         memory: "256Mi"
