@@ -34,51 +34,53 @@ spec:
           type: "remap"
           inputs: [ "kafka_input" ]
           source: |
-            # Add aggregator metadata
+            # Add aggregator timestamp for measuring throughput
             .aggregator_timestamp = now()
             
-            # Set default values for important fields if they don't exist
+            # Ensure kubernetes object exists - it should from edge, but just in case
+            if !exists(.kubernetes) {
+              .kubernetes = {}
+            }
+            
+            # Ensure critical fields exist with sensible defaults
             if !exists(.kubernetes.namespace) {
-              .kubernetes.namespace = .namespace ?? "unknown"
+              .kubernetes.namespace = "unknown"
             }
             
             if !exists(.kubernetes.pod_name) {
-              .kubernetes.pod_name = .pod_name ?? .pod ?? "unknown"
+              .kubernetes.pod_name = "unknown"
             }
             
-            # Extract log level if possible
-            if !exists(.level) && exists(.message) && is_string(.message) {
-              # Look for common log level patterns
-              if match(to_string(.message), r'(?i)\b(ERROR|WARN|INFO|DEBUG)\b') {
-                matches = parse_regex(to_string(.message), r'(?i)\b(ERROR|WARN|INFO|DEBUG)\b')
-                if exists(matches[1]) {
-                  .level = upcase(matches[1])
+            if !exists(.kubernetes.container_name) {
+              .kubernetes.container_name = "unknown"
+            }
+            
+            # Ensure we have a host field
+            if !exists(.host) {
+              .host = "unknown"
+            }
+            
+            # Extract log level if not already done
+            if !exists(.level) && exists(.message) {
+              if is_string(.message) {
+                message_str = string!(.message)
+                if match!(message_str, r'(?i)\b(ERROR|WARN|INFO|DEBUG)\b') {
+                  matches = parse_regex!(message_str, r'(?i)\b(ERROR|WARN|INFO|DEBUG)\b')
+                  if exists(matches[1]) {
+                    .level = upcase(matches[1])
+                  }
                 }
               }
             }
             
-            # Ensure we have a timestamp field for Loki
+            # Default level if not set
+            if !exists(.level) {
+              .level = "unknown"
+            }
+            
+            # Original timestamp should be preserved from edge, but just in case
             if !exists(.timestamp) {
               .timestamp = .aggregator_timestamp
-            }
-            
-            # Create labels for Loki
-            # The namespace and app labels are crucial for querying
-            .labels = {}
-            .labels.host = .host ?? "unknown"
-            
-            if exists(.kubernetes) {
-              .labels.namespace = .kubernetes.namespace
-              .labels.pod = .kubernetes.pod_name
-            
-              if exists(.kubernetes.container_name) {
-                .labels.container = .kubernetes.container_name
-                .labels.app = .kubernetes.container_name
-              }
-            }
-            
-            if exists(.level) {
-              .labels.level = .level
             }
 
       sinks:
@@ -127,8 +129,16 @@ spec:
         - name: api
           port: 8686
           targetPort: api
-          protocol: TCP
-    
+          protocol:
+
+    containerPorts:
+      - name: metrics
+        containerPort: 9598
+        protocol: TCP
+      - name: api
+        containerPort: 8686
+        protocol: TCP
+
 
     replicas: 2
     resources:
