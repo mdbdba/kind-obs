@@ -84,11 +84,32 @@ spec:
             .timestamp = now()
             .type = "log"
             
-            # Parse file path to get context
+            # Extract container info from path if available
             if exists(.file) {
               .log_file = .file
+            
+              # Try to extract container info from the path
+              if parse_regex(.file, r'/var/log/containers/(?<pod_name>[^_]+)_(?<namespace>[^_]+)_(?<container_name>[^-]+)-(?<container_id>.+)\.log') != null {
+                .kubernetes = {
+                  "pod_name": .pod_name, 
+                  "namespace": .namespace,
+                  "container_name": .container_name,
+                  "container_id": .container_id
+                }
+              }
+            
+              # Remove original file field
               del(.file)
             }
+            
+            # If message is a JSON string, parse it
+            if is_string(.message) && starts_with(strip_whitespace(.message), "{") {
+              parsed = parse_json!(.message, null)
+              if parsed != null {
+                .message = parsed
+              }
+            }
+
 
       # 3. Sink: Send to Kafka
       sinks:
