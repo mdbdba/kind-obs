@@ -157,7 +157,6 @@ spec:
           encoding:
             codec: "json"
 
-    replicas: 1
     resources:
       requests:
         memory: "256Mi"

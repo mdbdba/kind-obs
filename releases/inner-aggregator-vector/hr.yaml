@@ -15,95 +15,123 @@ spec:
       version: 0.41.0
   interval: 10m0s
   values:
-    vector:
-      role: "Aggregator"
-      customConfig:
-        sources:
-          kafka_input:
-            type: "kafka"
-            bootstrap_servers: "kafka-kafka-brokers.queuing.svc:9092"
-            topics: [ "telemetry-data" ] # Or use wildcard "grafana.*" if needed
-            group_id: "vector-aggregator"
-            auto_offset_reset: "earliest"
-            decoding:
-              codec: "json"
+    fullnameOverride: "inner-aggregator"
+    role: "Stateless-Aggregator"
+    customConfig:
+      data_dir: /vector-data
 
-        transforms:
-          # Process and tag incoming data
-          process_telemetry:
-            type: "remap"
-            inputs: [ "kafka_input" ]
-            source: |
-              .aggregator_timestamp = now()
+      sources:
+        kafka_input:
+          type: "kafka"
+          bootstrap_servers: "kafka-kafka-brokers.queuing.svc:9092"
+          topics: [ "telemetry-logs" ] # Or use wildcard "grafana.*" if needed
+          group_id: "vector-aggregator"
+          auto_offset_reset: "earliest"
+          decoding:
+            codec: "json"
 
-              # Ensure we have a type field to route on
-              if !exists(.type) {
-                # Attempt to detect the type based on fields
-                if exists(.level) || exists(.message) || exists(.severity) {
-                  .type = "log"
-                } else if exists(.value) || exists(.gauge) || exists(.counter) {
-                  .type = "metric"
-                } else {
-                  .type = "unknown"
+      transforms:
+        # Process and tag incoming data
+        process_telemetry:
+          type: "remap"
+          inputs: [ "kafka_input" ]
+          source: |
+            # Add aggregator metadata
+            .aggregator_timestamp = now()
+            
+            # Set default values for important fields if they don't exist
+            if !exists(.kubernetes.namespace) {
+              .kubernetes.namespace = .namespace ?? "unknown"
+            }
+            
+            if !exists(.kubernetes.pod_name) {
+              .kubernetes.pod_name = .pod_name ?? .pod ?? "unknown"
+            }
+            
+            # Extract log level if possible
+            if !exists(.level) && exists(.message) && is_string(.message) {
+              # Look for common log level patterns
+              if match(to_string(.message), r'(?i)\b(ERROR|WARN|INFO|DEBUG)\b') {
+                matches = parse_regex(to_string(.message), r'(?i)\b(ERROR|WARN|INFO|DEBUG)\b')
+                if exists(matches[1]) {
+                  .level = upcase(matches[1])
                 }
               }
+            }
+            
+            # Ensure we have a timestamp field for Loki
+            if !exists(.timestamp) {
+              .timestamp = .aggregator_timestamp
+            }
+            
+            # Create labels for Loki
+            # The namespace and app labels are crucial for querying
+            .labels = {}
+            .labels.host = .host ?? "unknown"
+            
+            if exists(.kubernetes) {
+              .labels.namespace = .kubernetes.namespace
+              .labels.pod = .kubernetes.pod_name
+            
+              if exists(.kubernetes.container_name) {
+                .labels.container = .kubernetes.container_name
+                .labels.app = .kubernetes.container_name
+              }
+            }
+            
+            if exists(.level) {
+              .labels.level = .level
+            }
 
-          # Route logs and metrics to different outputs
-          route_by_type:
-            type: "route"
-            inputs: [ "process_telemetry" ]
-            route:
-              logs: '.type == "log" || .type == "unknown"'  # Send unknown to logs by default
-              metrics: '.type == "metric"'
+      sinks:
+        # Loki for logs
+        loki_output:
+          type: "loki"
+          inputs: ["enrich_logs"]
+          endpoint: "http://monitoring-lgtm-loki-gateway.monitoring.svc:80"
+          encoding:
+            codec: "json"
+          labels:
+            namespace: '{{ labels.namespace }}'
+            pod: '{{ labels.pod }}'
+            container: '{{ labels.container }}'
+            app: '{{ labels.app }}'
+            host: '{{ labels.host }}'
+            level: '{{ labels.level }}'
+          out_of_order_action: "accept"  # Handle logs arriving out of order
+          batch:
+            max_bytes: 1048576           # 1MB
+            timeout_secs: 1
+          remove_label_fields: false      # Don't remove fields used for labels
+          healthcheck:
+            enabled: true
 
-        sinks:
-          # Loki for logs
-          loki_output:
-            type: "loki"
-            inputs: [ "route_by_type.logs" ]
-            endpoint: "http://monitoring-lgtm-loki-gateway.monitoring.svc:80"
-            encoding:
-              codec: "json"
-            labels:
-              app: '{{component}}'
-              namespace: '{{kubernetes.namespace}}'
-              node: '{{edge_node}}'
-              level: '{{level}}'
-            out_of_order_action: "accept"  # Handle logs arriving out of order
-            remove_label_fields: true
-            # Basic auth if needed
-            # auth:
-            #   strategy: "basic"
-            #   user: "${LOKI_USERNAME}"
-            #   password: "${LOKI_PASSWORD}"
+        # Debug sink - useful during setup and testing
+        console:
+          type: "console"
+          inputs: [ "process_telemetry" ]
+          encoding:
+            codec: "json"
 
-          # Mimir/Prometheus for metrics
-          mimir_output:
-            type: "prometheus_remote_write"
-            inputs: [ "route_by_type.metrics" ]
-            endpoint: "http://monitoring-lgtm-mimir-nginx.monitoring.svc:80/api/v1/push"
-            # Authentication if needed
-            # auth:
-            #   strategy: "basic"
-            #   user: "${MIMIR_USERNAME}"
-            #   password: "${MIMIR_PASSWORD}"
-
-          # Debug sink - useful during setup and testing
-          console:
-            type: "console"
-            inputs: [ "process_telemetry" ]
-            encoding:
-              codec: "json"
+    # Create a PVC for data persistence
+    persistence:
+      enabled: true
+      size: 10Gi
+    # Create a volume mount for the data directory
+    extraVolumeMounts:
+      - name: data
+        mountPath: /vector-data
 
 
-      service:
-        enabled: true
-        type: ClusterIP
+    service:
+      enabled: true
+      type: ClusterIP
 
-      resources:
-        requests:
-          memory: "512Mi"
-          cpu: "200m"
-        limits:
-          memory: "1Gi"
-          cpu: "1000m"
+    replicas: 2
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "200m"
+      limits:
+        memory: "1Gi"
+        cpu: "1000m"
