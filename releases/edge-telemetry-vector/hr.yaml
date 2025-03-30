@@ -88,13 +88,17 @@ spec:
             if exists(.file) {
               .log_file = .file
             
-              # Try to extract container info from the path
-              if parse_regex(.file, r'/var/log/containers/(?<pod_name>[^_]+)_(?<namespace>[^_]+)_(?<container_name>[^-]+)-(?<container_id>.+)\.log') != null {
-                .kubernetes = {
-                  "pod_name": .pod_name, 
-                  "namespace": .namespace,
-                  "container_name": .container_name,
-                  "container_id": .container_id
+              # Make sure .file is string before using it with parse_regex
+              if is_string(.file) {
+                # Try to extract container info from the path
+                container_regex = parse_regex(.file, r'/var/log/containers/(?<pod_name>[^_]+)_(?<namespace>[^_]+)_(?<container_name>[^-]+)-(?<container_id>.+)\.log') 
+                if container_regex != null {
+                  .kubernetes = {
+                    "pod_name": container_regex.pod_name, 
+                    "namespace": container_regex.namespace,
+                    "container_name": container_regex.container_name,
+                    "container_id": container_regex.container_id
+                  }
                 }
               }
             
@@ -103,10 +107,15 @@ spec:
             }
             
             # If message is a JSON string, parse it
-            if is_string(.message) && starts_with(strip_whitespace(.message), "{") {
-              parsed = parse_json!(.message, null)
-              if parsed != null {
-                .message = parsed
+            if is_string(.message) {
+              # Handle strip_whitespace safely
+              cleaned_message = .message
+              # Only try to parse if it looks like JSON
+              if starts_with(cleaned_message, "{") || starts_with(cleaned_message, "[") {
+                parsed = parse_json(cleaned_message) 
+                if parsed != null {
+                  .message = parsed
+                }
               }
             }
 
