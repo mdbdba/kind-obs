@@ -79,30 +79,29 @@ spec:
           type: "remap"
           inputs: ["logs_source"]
           source: |
-            # Add metadata
+            # Add basic metadata
             .host = get_env_var("HOSTNAME") ?? "unknown"
             .timestamp = now()
             .type = "log"
             
-            # Extract container info from path if available
+            # Handle file path and extract container info
             if exists(.file) {
               .log_file = .file
             
-              # Convert .file to string and handle kubernetes metadata extraction
-              file_path = to_string(.file) ?? ""
-              if file_path != "" {
-                # Use the ! operator to force the parsing and handle errors
-                regex_pattern = r'/var/log/containers/(?<pod_name>[^_]+)_(?<namespace>[^_]+)_(?<container_name>[^-]+)-(?<container_id>.+)\.log'
+              # Safe way to convert to string
+              file_str = to_string(.file) ?? ""
             
-                # Use match to safely check if the pattern matches
-                if match(file_path, regex_pattern) {
-                  # Now use parse_regex! since we know it matches
-                  container_info = parse_regex!(file_path, regex_pattern)
+              # Check if file path matches Kubernetes container log pattern
+              if match(file_str, r'/var/log/containers/') {
+                # Extract pod, namespace, container
+                regex_result = parse_regex!(file_str, r'/var/log/containers/(?<pod_name>[^_]+)_(?<namespace>[^_]+)_(?<container>[^-]+)-(?<container_id>.+)\.log')
+            
+                if exists(regex_result.pod_name) {
                   .kubernetes = {
-                    "pod_name": container_info.pod_name, 
-                    "namespace": container_info.namespace,
-                    "container_name": container_info.container_name,
-                    "container_id": container_info.container_id
+                    "pod_name": regex_result.pod_name,
+                    "namespace": regex_result.namespace,
+                    "container_name": regex_result.container,
+                    "container_id": regex_result.container_id
                   }
                 }
               }
@@ -111,20 +110,21 @@ spec:
               del(.file)
             }
             
-            # If message is a JSON string, parse it
+            # Handle JSON message parsing
             if is_string(.message) {
-              # Convert to string explicitly to ensure type safety
-              message_str = .message
+              message_content = .message
             
-              # Check if it starts with JSON indicators
-              if string!(message_str)[0:1] == "{" || string!(message_str)[0:1] == "[" {
-                # Try to parse as JSON and handle errors
-                parsed = parse_json(message_str)
+              # Simple check if it looks like JSON
+              first_char = slice(message_content, 0, 1)
+            
+              if first_char == "{" || first_char == "[" {
+                parsed = parse_json(message_content)
                 if parsed != null {
                   .message = parsed
                 }
               }
             }
+
 
       # 3. Sink: Send to Kafka
       sinks:
