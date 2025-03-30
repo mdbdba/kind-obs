@@ -59,9 +59,9 @@ spec:
           type: "file"
           include:
             - "/var/log/**/*.log" # standard system logs
-            - "/var/lib/docker/containers/**/*.log" # container logs
             - "/var/log/pods/**/*.log" # k8s logs
           exclude:
+            - "/var/log/containers/**"
             - "/var/log/containers/edge-telemetry-*_telemetry_vector-*.log"
             - "/var/log/pods/telemetry_edge-telemetry-*_*/vector/*.log"
 
