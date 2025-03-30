@@ -59,7 +59,11 @@ spec:
           ignore_older: 86400  # 1 day in seconds
           max_read_bytes: 10485760  # 10MB
           multiline:
-            mode: "newline_delimiter"  # Handles multi-line log entries
+            mode: "halt_before"  # This mode assumes log entries start with specific patterns
+            start_pattern: '^\d{4}-\d{2}-\d{2}'  # Assumes logs start with dates like 2025-03-30
+            condition_pattern: '^\d{4}-\d{2}-\d{2}'  # Same pattern to identify new log lines
+            timeout_ms: 1000  # Max time to wait for additional lines
+      
 
       transforms:
         prepare_logs:
