@@ -17,6 +17,7 @@ spec:
   values:
     fullnameOverride: "inner-aggregator"
     role: "Stateless-Aggregator"
+    logLevel: "debug"
     customConfig:
       sources:
         kafka_input:
