@@ -64,7 +64,7 @@ spec:
             if !exists(.level) && exists(.message) {
               if is_string(.message) {
                 message_str = string!(.message)
-                if match!(message_str, r'(?i)\b(ERROR|WARN|INFO|DEBUG)\b') {
+                if match(message_str, r'(?i)\b(ERROR|WARN|INFO|DEBUG)\b') {
                   matches = parse_regex!(message_str, r'(?i)\b(ERROR|WARN|INFO|DEBUG)\b')
                   if exists(matches[1]) {
                     level_str = string!(matches[1])
