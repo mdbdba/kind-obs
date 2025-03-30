@@ -142,6 +142,9 @@ spec:
         containerPort: 8686
         protocol: TCP
 
+    api:
+      enabled: true
+      address: 0.0.0.0:8686
 
     replicas: 2
     resources:
