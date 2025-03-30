@@ -112,18 +112,23 @@ spec:
             
             # Handle JSON message parsing
             if is_string(.message) {
-              message_content = .message
+              # Ensure we have a valid string type
+              message_str = string!(.message)
             
-              # Simple check if it looks like JSON
-              first_char = slice(message_content, 0, 1)
+              # Safe check if string is not empty and starts with JSON-like characters
+              if length(message_str) > 0 {
+                first_char = slice!(message_str, 0, 1)
             
-              if first_char == "{" || first_char == "[" {
-                parsed = parse_json(message_content)
-                if parsed != null {
-                  .message = parsed
+                if first_char == "{" || first_char == "[" {
+                  # Try to parse as JSON with proper error handling
+                  parsed = parse_json(message_str)
+                  if parsed != null {
+                    .message = parsed
+                  }
                 }
               }
             }
+
 
 
       # 3. Sink: Send to Kafka
