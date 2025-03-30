@@ -67,7 +67,9 @@ spec:
                 if match!(message_str, r'(?i)\b(ERROR|WARN|INFO|DEBUG)\b') {
                   matches = parse_regex!(message_str, r'(?i)\b(ERROR|WARN|INFO|DEBUG)\b')
                   if exists(matches[1]) {
-                    .level = upcase(matches[1])
+                    level_str = string!(matches[1])
+                    .level = upcase(level_str)
+
                   }
                 }
               }
