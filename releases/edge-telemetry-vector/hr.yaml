@@ -35,6 +35,9 @@ spec:
       - name: custom-pod-logs
         hostPath:
           path: /var/log/pods
+      - name: vector-data
+        emptyDir: {}
+
 
     extraVolumeMounts:
       - name: custom-var-log
@@ -45,6 +48,9 @@ spec:
       - name: custom-pod-logs
         mountPath: /var/log/pods
         readOnly: true
+      - name: vector-data
+        mountPath: /var/lib/vector
+
 
     customConfig:
       sources:
@@ -63,7 +69,7 @@ spec:
             start_pattern: '^\d{4}-\d{2}-\d{2}'  # Assumes logs start with dates like 2025-03-30
             condition_pattern: '^\d{4}-\d{2}-\d{2}'  # Same pattern to identify new log lines
             timeout_ms: 1000  # Max time to wait for additional lines
-      
+
 
       transforms:
         prepare_logs:
