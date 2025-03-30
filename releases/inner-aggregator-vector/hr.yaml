@@ -90,12 +90,12 @@ spec:
           encoding:
             codec: "json"
           labels:
-            namespace: '{{ labels.namespace }}'
-            pod: '{{ labels.pod }}'
-            container: '{{ labels.container }}'
-            app: '{{ labels.app }}'
-            host: '{{ labels.host }}'
-            level: '{{ labels.level }}'
+            namespace: "{{ namespace }}"
+            pod: "{{ pod }}"
+            container: "{{ container }}"
+            app: "{{ app }}"
+            host: "{{ host }}"
+            level: "{{ log_level }}"
           out_of_order_action: "accept"  # Handle logs arriving out of order
           batch:
             max_bytes: 1048576           # 1MB
