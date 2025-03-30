@@ -121,10 +121,11 @@ spec:
             
                 if first_char == "{" || first_char == "[" {
                   # Try to parse as JSON with proper error handling
-                  parsed = parse_json(message_str)
-                  if parsed != null {
+                  parsed, err = parse_json(message_str)
+                  if err == null {
                     .message = parsed
                   }
+
                 }
               }
             }
